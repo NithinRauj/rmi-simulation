@@ -1,0 +1,3 @@
+grant codeBase "file:D:\Repos\rmi_clocks_simulation\policy"{
+      permission java.security.AllPermission;
+};
