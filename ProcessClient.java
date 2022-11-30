@@ -10,13 +10,14 @@ public class ProcessClient {
         // if (System.getSecurityManager() == null) {
         // System.setSecurityManager(new SecurityManager());
         // }
-        String p1Name = "rmi://localhost:6000/p1";
+        String baseUrl = args[0];
+        String p1Name = baseUrl + "p1";
         ProcessObject p1 = (ProcessObject) Naming.lookup(p1Name);
-        String p2Name = "rmi://localhost:6000/p2";
+        String p2Name = baseUrl + "p2";
         ProcessObject p2 = (ProcessObject) Naming.lookup(p2Name);
-        String p3Name = "rmi://localhost:6000/p3";
+        String p3Name = baseUrl + "p3";
         ProcessObject p3 = (ProcessObject) Naming.lookup(p3Name);
-        String p4Name = "rmi://localhost:6000/p4";
+        String p4Name = baseUrl + "p4";
         ProcessObject p4 = (ProcessObject) Naming.lookup(p4Name);
         int timer = 0;
 

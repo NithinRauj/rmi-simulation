@@ -5,19 +5,19 @@ compile:
 	javac Message.java
 
 p1:
-	java ProcessObjectNode p1
+	java ProcessObjectNode rmi://localhost:6000/ p1
 
 p2:
-	java ProcessObjectNode p2
+	java ProcessObjectNode rmi://localhost:6000/ p2
 
 p3:
-	java ProcessObjectNode p3
+	java ProcessObjectNode rmi://localhost:6000/ p3
 
 p4:
-	java ProcessObjectNode p4
+	java ProcessObjectNode rmi://localhost:6000/ p4
 
 client:
-	java ProcessClient
+	java ProcessClient rmi://localhost:6000/
 
 clean:
 	rm -f *.class

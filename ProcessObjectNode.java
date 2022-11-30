@@ -85,8 +85,8 @@ public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject imple
         // if (System.getSecurityManager() == null) {
         // System.setSecurityManager(new SecurityManager());
         // }
-        String baseUrl = "rmi://localhost:6000/";
-        String processName = args[0];
+        String baseUrl = args[0];
+        String processName = args[1];
 
         if (Arrays.asList(processes).contains(processName)) {
             String processUrl = baseUrl + processName;
