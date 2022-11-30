@@ -3,7 +3,7 @@ import java.rmi.*;
 
 public class ProcessClient {
 
-    public static int SIM_TIME = 20;
+    public static int SIMULATION_TIME = 60;
 
     public static void main(String args[])
             throws MalformedURLException, RemoteException, NotBoundException, InterruptedException {
@@ -26,8 +26,9 @@ public class ProcessClient {
         p3.toggleProcessLock();
         p4.toggleProcessLock();
 
+        System.out.println("Starting simulation...");
         // Run simulation
-        while (timer <= ProcessClient.SIM_TIME) {
+        while (timer <= ProcessClient.SIMULATION_TIME) {
             System.out.println("p1: " + p1.getClock() + " p2: " + p2.getClock() +
                     " p3: " + p3.getClock() + " p4: " + p4.getClock());
             Thread.sleep(1000);

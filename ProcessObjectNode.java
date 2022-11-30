@@ -3,12 +3,13 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-// import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.Arrays;
+import java.util.Random;
 
 public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject implements ProcessObject {
     public static String[] processes = { "p1", "p2", "p3", "p4" };
+    private static double BYZANTINE_FAULT_PROBABILITY = 0.3;
+
     private boolean locked = true;
     private int clock = 0;
     private String processName;
@@ -19,7 +20,7 @@ public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject imple
     }
 
     public void setClock(int value) {
-        clock += value;
+        clock = value;
     }
 
     public synchronized int getClock() {
@@ -32,47 +33,68 @@ public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject imple
 
     public synchronized void sendMessage(Message m) throws RemoteException {
         mqueue.add(m);
-        System.out.println("Sending message");
-        // m.printMessage();
     }
 
     private static int generateChoice() {
-        final int MIN = 1;
-        final int MAX = 5;
-        return (int) ((Math.random() * (MAX - MIN)) + MIN) - 1;
+        Random rand = new Random();
+        return rand.nextInt(4);
+    }
+
+    private static boolean isFailure() {
+        double event = Math.random();
+        return event < BYZANTINE_FAULT_PROBABILITY;
     }
 
     public synchronized void receiveMessage() throws RemoteException {
         if (mqueue.size() > 0) {
             Message msg = mqueue.remove(0);
-            // msg.printMessage();
             System.out.println("Sender clock: " + msg.clock);
+            if (isFailure()) {
+                System.out.println("Byzantine failure occured...");
+                return;
+            }
             if (clock <= msg.clock) {
-                // clock += msg.clock;
                 setClock(msg.clock + 1);
             } else {
-                setClock(1);
+                setClock(clock + 1);
             }
             System.out.println(processName + " clock value:" + clock);
         }
     }
 
+    private static void runProcess(String baseUrl, String processUrl, ProcessObjectNode currentProcess)
+            throws InterruptedException, NotBoundException, MalformedURLException, RemoteException {
+        Thread.sleep(1000);
+        int choice = generateChoice();
+
+        if (processes[choice].equals(currentProcess.processName)) {
+            System.out.println("Internal event in process");
+        } else {
+            ProcessObject chosenProcess = (ProcessObject) Naming.lookup(baseUrl + processes[choice]);
+            Message msg = new Message(processUrl, "message", currentProcess.clock);
+            chosenProcess.sendMessage(msg);
+        }
+        currentProcess.setClock(currentProcess.clock + 1);
+
+        currentProcess.receiveMessage();
+        Thread.sleep(1000);
+    }
+
     public static void main(String args[])
-            throws RemoteException, MalformedURLException, NotBoundException, InterruptedException {
+            throws RemoteException, MalformedURLException, InterruptedException, NotBoundException {
         // if (System.getSecurityManager() == null) {
         // System.setSecurityManager(new SecurityManager());
         // }
-        String processBaseUrl = "rmi://localhost:6000/";
+        String baseUrl = "rmi://localhost:6000/";
         String processName = args[0];
 
-        if (processName.equals("p1") || processName.equals("p2")
-                || processName.equals("p3") || processName.equals("p4")) {
-            String process = processBaseUrl + processName;
-            ProcessObjectNode currentProcess = new ProcessObjectNode(process);
-            Naming.rebind(process, currentProcess);
+        if (Arrays.asList(processes).contains(processName)) {
+            String processUrl = baseUrl + processName;
+            ProcessObjectNode currentProcess = new ProcessObjectNode(processName);
+            Naming.rebind(processUrl, currentProcess);
 
-            System.out.println("Binded process to name " + process);
-            System.out.println(process + " ready!");
+            System.out.println("Binded process to name " + processUrl);
+            System.out.println(processUrl + " ready!");
 
             while (currentProcess.locked) {
                 // Be idle
@@ -82,16 +104,7 @@ public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject imple
 
             System.out.println("Process started as lock has been released");
             while (!currentProcess.locked) {
-                Thread.sleep(1000);
-                int choice = generateChoice();
-                System.out.println("chosen process " + choice);
-                ProcessObject chosenProcess = (ProcessObject) Naming.lookup(processBaseUrl +
-                        processes[choice]);
-                Message msg = new Message(process, "message", currentProcess.clock);
-                chosenProcess.sendMessage(msg);
-                currentProcess.setClock(1);
-                currentProcess.receiveMessage();
-                Thread.sleep(1000);
+                runProcess(baseUrl, processUrl, currentProcess);
             }
         } else {
             System.err.println("Use a valid process name (p1,p2,p3,p4)");
