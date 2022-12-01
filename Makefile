@@ -1,4 +1,5 @@
 compile:
+	javac RandomWeightedChoice.java
 	javac ProcessObject.java
 	javac ProcessObjectNode.java
 	javac ProcessClient.java

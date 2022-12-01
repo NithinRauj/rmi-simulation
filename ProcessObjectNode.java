@@ -4,11 +4,9 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject implements ProcessObject {
     public static String[] processes = { "p1", "p2", "p3", "p4" };
-    private static double BYZANTINE_FAULT_PROBABILITY = 0.3;
 
     private boolean locked = true;
     private int clock = 0;
@@ -35,21 +33,14 @@ public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject imple
         mqueue.add(m);
     }
 
-    private static int generateChoice() {
-        Random rand = new Random();
-        return rand.nextInt(4);
-    }
-
-    private static boolean isFailure() {
-        double event = Math.random();
-        return event < BYZANTINE_FAULT_PROBABILITY;
-    }
-
     public synchronized void receiveMessage() throws RemoteException {
         if (mqueue.size() > 0) {
             Message msg = mqueue.remove(0);
-            System.out.println("Sender clock: " + msg.clock);
-            if (isFailure()) {
+            System.out.println("Processing received message...");
+            double byzantineFaultWeight = 65.0;
+            double[] weights = { byzantineFaultWeight, 35.0 };
+            int choice = new RandomWeightedChoice().nextChoice(weights);
+            if (choice == 0) {
                 System.out.println("Byzantine failure occured...");
                 return;
             }
@@ -58,18 +49,20 @@ public class ProcessObjectNode extends java.rmi.server.UnicastRemoteObject imple
             } else {
                 setClock(clock + 1);
             }
-            System.out.println(processName + " clock value:" + clock);
+            System.out.println("Updated clock value to " + clock);
         }
     }
 
     private static void runProcess(String baseUrl, String processUrl, ProcessObjectNode currentProcess)
             throws InterruptedException, NotBoundException, MalformedURLException, RemoteException {
         Thread.sleep(1000);
-        int choice = generateChoice();
+        double[] weights = { 5.0, 70.0, 15.0, 15.0 };
+        int choice = new RandomWeightedChoice().nextChoice(weights);
 
         if (processes[choice].equals(currentProcess.processName)) {
             System.out.println("Internal event in process");
         } else {
+            System.out.println("Sending message to a process");
             ProcessObject chosenProcess = (ProcessObject) Naming.lookup(baseUrl + processes[choice]);
             Message msg = new Message(processUrl, "message", currentProcess.clock);
             chosenProcess.sendMessage(msg);
